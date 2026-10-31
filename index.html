@@ -7,8 +7,8 @@
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121214; color: #e1e1e6; margin: 0; padding: 0; }
     header { background: #1a1a1e; border-bottom: 2px solid #29292e; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-    h0, h1, h2, h3 { color: #e67e22; }
-    .nav-tabs { display: flex; gap: 10px; background: #161619; padding: 10px 30px; border-bottom: 1px solid #29292e; }
+    h2, h3 { color: #e67e22; }
+    .nav-tabs { display: flex; gap: 10px; background: #161619; padding: 10px 30px; border-bottom: 1px solid #29292e; flex-wrap: wrap; }
     .tab-btn { background: #202024; border: 1px solid #29292e; color: #a8a8b3; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
     .tab-btn.active, .tab-btn:hover { background: #00b4d8; color: #121214; border-color: #00b4d8; }
     .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
@@ -20,6 +20,7 @@
     .btn-sys:hover { opacity: 0.85; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    .material-item { background: #202024; border: 1px solid #29292e; padding: 12px 15px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
@@ -28,15 +29,15 @@
     <h2>Portal de Cultura Digital & Arena</h2>
     <div style="display: flex; align-items: center; gap: 15px;">
       <span id="nome-aluno-logado" style="font-weight: bold; color: #00b4d8;">Estudante</span>
-      <span style="background: #202024; padding: 6px 12px; border-radius: 20px; border: 1px solid #29292e; font-size: 13px;">🧠 <span id="moedas-aluno">0</span> Méritos</span>
+      <span style="background: #202024; padding: 6px 12px; border-radius: 20px; border: 1px solid #29292e; font-size: 13px;">🧠 <span id="moedas-aluno">40</span> Méritos</span>
       <button class="btn-sys" onclick="sair()" style="background: #f75a68; color: #fff; padding: 6px 12px; font-size: 12px;">Sair</button>
     </div>
   </header>
 
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="mudarAba('mural', event)">🏠 Início / Mural</button>
-    <button class="tab-btn" onclick="mudarAba('disciplinas', event)">📚 Disciplinas & Aulas</button>
-    <button class="tab-btn" onclick="mudarAba('jogos', event)">⚔️ Jogos (Duelo Acadêmico)</button>
+    <button class="tab-btn" onclick="mudarAba('disciplinas', event)">📚 Aulas & Materiais</button>
+    <button class="tab-btn" onclick="mudarAba('jogos', event)">⚔️ Duelo Acadêmico</button>
     <button class="tab-btn" onclick="mudarAba('perfil', event)">🖼️ Perfil & Molduras</button>
   </div>
 
@@ -45,48 +46,55 @@
     <!-- ABA 1: INÍCIO / MURAL -->
     <div id="mural" class="tab-content active">
       <div class="card">
-        <h3>📢 Mural da Disciplina & Avisos</h3>
-        <p style="color: #a8a8b3;">Bem-vindo ao portal unificado! Aqui você tem acesso aos roteiros das aulas práticas, avisos do professor e ao Duelo Acadêmico.</p>
-        <div id="aviso-semana-box" style="background: #202024; border-left: 4px solid #e67e22; padding: 15px; border-radius: 6px; margin-top: 15px;">
+        <h3>📢 Mural da Disciplina de Cultura Digital</h3>
+        <p style="color: #a8a8b3;">Bem-vindo ao portal unificado! Aqui você tem acesso aos roteiros das aulas práticas, atividades complementares e ao Duelo Acadêmico para testar seus conhecimentos.</p>
+        <div style="background: #202024; border-left: 4px solid #e67e22; padding: 15px; border-radius: 6px; margin-top: 15px;">
           <strong style="color: #e67e22;">💡 Aviso da Semana:</strong>
-          <p id="texto-aviso-aluno" style="margin: 5px 0 0 0; color: #e1e1e6;">Carregando avisos recentes...</p>
+          <p id="texto-aviso-aluno" style="margin: 5px 0 0 0; color: #e1e1e6;">Carregando aviso do professor...</p>
         </div>
       </div>
     </div>
 
-    <!-- ABA 2: DISCIPLINAS & MATERIAIS -->
+    <!-- ABA 2: AULAS & MATERIAIS (CLICÁVEIS) -->
     <div id="disciplinas" class="tab-content">
       <div class="card">
-        <h3>📚 Módulos Curriculares & Materiais</h3>
-        <p style="color: #a8a8b3;">Selecione um módulo para aceder às aulas, materiais e acompanhar o seu progresso:</p>
+        <h3>📚 Materiais Didáticos & Guias da BNCC</h3>
+        <p style="color: #a8a8b3;">Selecione um módulo abaixo para abrir as aulas e materiais práticos:</p>
         <div class="module-grid" id="lista-modulos-aluno">
           <p>A carregar módulos do Supabase...</p>
         </div>
       </div>
+
+      <!-- VISUALIZAÇÃO DOS MATERIAIS DE UM MÓDULO ESPECÍFICO -->
+      <div id="secao-detalhe-modulo" class="card" style="display: none; margin-top: 20px; border-color: #00b4d8;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 id="titulo-modulo-selecionado" style="color: #00b4d8; margin: 0;"></h3>
+          <button class="btn-sys" onclick="voltarParaModulos()" style="background: #29292e; color: #fff; font-size: 12px;">← Voltar aos Módulos</button>
+        </div>
+        <div id="lista-materiais-modulo" style="margin-top: 15px;">
+          <!-- Materiais inseridos via script -->
+        </div>
+      </div>
     </div>
 
-    <!-- ABA 3: JOGOS (DUELO ACADÊMICO) -->
+    <!-- ABA 3: DUELO ACADÊMICO -->
     <div id="jogos" class="tab-content">
       <div class="card" style="text-align: center; padding: 40px;">
         <h3>⚔️ Arena de Duelo Acadêmico</h3>
-        <p style="color: #a8a8b3; margin-bottom: 20px;">Desafie os seus colegas de turma em perguntas de lógica, programação e cultura digital para ganhar méritos extras!</p>
-        <button class="btn-sys" onclick="alert('Duelo Acadêmico em modo de pareamento!')">Entrar na Fila de Duelo</button>
+        <p style="color: #a8a8b3; margin-bottom: 20px;">Desafie os seus colegas em perguntas de lógica e computação.</p>
+        <button class="btn-sys" onclick="alert('Iniciando pareamento para o Duelo Acadêmico!')">Entrar na Fila de Duelo</button>
       </div>
     </div>
 
     <!-- ABA 4: PERFIL & MOLDURAS -->
     <div id="perfil" class="tab-content">
       <div class="card">
-        <h3>🖼️ Personalização de Perfil & Molduras</h3>
-        <p style="color: #a8a8b3;">Escolha a sua moldura de avatar conquistada através da evolução nas disciplinas.</p>
+        <h3>🖼️ Perfil & Molduras</h3>
+        <p style="color: #a8a8b3;">Personalize o seu avatar e selecione molduras conquistadas.</p>
         <div style="display: flex; gap: 15px; margin-top: 15px;">
           <div style="border: 2px solid #e67e22; padding: 15px; border-radius: 8px; text-align: center; background: #202024;">
             <p style="margin: 0; font-weight: bold;">Moldura Padrão</p>
             <span style="font-size: 12px; color: #04d361;">Ativa</span>
-          </div>
-          <div style="border: 1px solid #29292e; padding: 15px; border-radius: 8px; text-align: center; background: #202024; opacity: 0.6;">
-            <p style="margin: 0; font-weight: bold;">Mestre Cibernético</p>
-            <span style="font-size: 12px; color: #f39c12;">Bloqueado (Requer Módulo 3)</span>
           </div>
         </div>
       </div>
@@ -107,20 +115,20 @@
     }
 
     async function carregarPortalAluno() {
-      // Carregar Aviso do Mural publicado pelo professor
+      // Carregar aviso do mural publicado no painel do professor
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
       if(avisoSalvo) {
         document.getElementById('texto-aviso-aluno').innerText = avisoSalvo;
       } else {
-        document.getElementById('texto-aviso-aluno').innerText = "Nenhum aviso publicado esta semana. Acompanhe as novidades por aqui!";
+        document.getElementById('texto-aviso-aluno').innerText = "Conclua a leitura dos módulos na aba Aulas & Materiais para garantir bônus de Méritos Acadêmicos (🧠) no seu perfil!";
       }
 
-      // Carregar Módulos do Supabase para o aluno
-      const { data: modulos, error } = await _supabase.from('se_modulos').select('*');
+      // Carregar módulos do Supabase (tabela se_modulos)
+      const { data: modulos, error } = await _supabase.from('se_modulos').select('*').order('ordem', { ascending: true });
       const containerModulos = document.getElementById('lista-modulos-aluno');
       
       if (error || !modulos || modulos.length === 0) {
-        containerModulos.innerHTML = '<p style="color: #f75a68;">Nenhum módulo disponível no momento.</p>';
+        containerModulos.innerHTML = '<p style="color: #f75a68;">Nenhum módulo encontrado no banco de dados.</p>';
         return;
       }
 
@@ -129,17 +137,54 @@
         const div = document.createElement('div');
         div.className = 'module-card';
         div.innerHTML = `
-          <h4 style="color: #e67e22; margin-top:0;">${mod.titulo}</h4>
-          <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo prático da BNCC.'}</p>
-          <button class="btn-sys" style="font-size: 11px; padding: 5px 10px;" onclick="acessarModulo('${mod.id}', '${mod.titulo}')">Aceder Aulas</button>
+          <h4 style="color: #e67e22; margin-top:0;">Módulo ${mod.ordem || ''} — ${mod.titulo}</h4>
+          <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo curricular interativo.'}</p>
+          <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aulas & Materiais</button>
         `;
+        // Torna o cartão clicable para abrir os materiais daquele módulo
+        div.onclick = () => carregarMateriaisDoModulo(mod.id, mod.titulo);
         containerModulos.appendChild(div);
       });
     }
 
-    function acessarModulo(idModulo, titulo) {
-      alert(`A abrir os conteúdos e materiais do módulo: ${titulo}`);
-      // Aqui você pode direcionar para a visualização detalhada das aulas e materiais daquele módulo específico
+    async function carregarMateriaisDoModulo(idModulo, tituloModulo) {
+      document.getElementById('lista-modulos-aluno').parentElement.style.display = 'none';
+      const secaoDetalhe = document.getElementById('secao-detalhe-modulo');
+      secaoDetalhe.style.display = 'block';
+      document.getElementById('titulo-modulo-selecionado').innerText = tituloModulo;
+      
+      const containerMateriais = document.getElementById('lista-materiais-modulo');
+      containerMateriais.innerHTML = '<p>A carregar materiais e aulas...</p>';
+
+      // Consulta os materiais vinculados ao módulo na tabela se_materiais
+      const { data: materiais, error } = await _supabase
+        .from('se_materiais')
+        .select('*')
+        .eq('modulo_id', idModulo);
+
+      if (error || !materiais || materiais.length === 0) {
+        containerMateriais.innerHTML = '<p style="color: #f39c12;">Nenhum material cadastrado para este módulo ainda.</p>';
+        return;
+      }
+
+      containerMateriais.innerHTML = '';
+      materiais.forEach(mat => {
+        const item = document.createElement('div');
+        item.className = 'material-item';
+        item.innerHTML = `
+          <div>
+            <strong>📄 ${mat.titulo}</strong>
+            <p style="margin: 3px 0 0 0; font-size: 12px; color: #a8a8b3;">${mat.descricao || 'Atividade prática recomendada.'}</p>
+          </div>
+          <a href="${mat.url || '#'}" target="_blank" class="btn-sys" style="font-size: 11px; text-decoration: none;">Aceder Conteúdo</a>
+        `;
+        containerMateriais.appendChild(item);
+      });
+    }
+
+    function voltarParaModulos() {
+      document.getElementById('secao-detalhe-modulo').style.display = 'none';
+      document.getElementById('lista-modulos-aluno').parentElement.style.display = 'block';
     }
 
     function sair() {
