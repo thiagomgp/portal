@@ -60,7 +60,11 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarPainel() {
-      const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
+      // Chamada ultra-simplificada para evitar qualquer caractere indesejado na URL
+      const { data: alunos, error } = await _supabase
+        .from('se_alunos')
+        .select('id, nome, usuario, senha, turma, autorizado, moedas');
+      
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
