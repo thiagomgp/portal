@@ -22,13 +22,13 @@
       <h2 style="color: #e67e22; margin:0;">👑 Gestão de Alunos & Acessos</h2>
       <span style="color: #04d361; font-size: 13px; font-weight: bold;">● Modo Direto Ativo</span>
     </div>
-    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros pendentes e controle o acesso dos alunos ao portal.</p>
+    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros pendentes e controle o acesso dos alunos ao portal (Tabela: <code>se_alunos</code>).</p>
 
     <table class="admin-table">
       <thead>
         <tr>
           <th>Nome</th>
-          <th>E-mail / Usuário</th>
+          <th>Usuário</th>
           <th>Turma</th>
           <th>Estado</th>
           <th>Ações</th>
@@ -46,7 +46,8 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarAlunos() {
-      const { data: alunos, error } = await _supabase.from('alunos').select('*');
+      // Consulta correta na tabela se_alunos
+      const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
@@ -60,17 +61,13 @@
         return;
       }
 
-      // Mostra no console do navegador as propriedades do primeiro aluno para identificarmos os nomes exatos das colunas
-      console.log("Estrutura do registro recebida do Supabase:", alunos[0]);
-
       alunos.forEach(al => {
-        // Verifica dinamicamente qual propriedade booleana existe no objeto para definir o estado
-        const statusLiberado = al.autorizado ?? al.ativo ?? al.liberado ?? true;
+        const statusLiberado = al.autorizado === true;
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${al.nome || 'Estudante'}</td>
-          <td>${al.email || al.usuario || '-'}</td>
+          <td>${al.usuario || '-'}</td>
           <td>${al.turma || 'Geral'}</td>
           <td style="color:${statusLiberado ? '#04d361':'#f39c12'}">${statusLiberado ? 'Liberado':'Pendente'}</td>
           <td>
@@ -83,29 +80,17 @@
     }
 
     async function aprovar(id) {
-      // Tenta atualizar a coluna que realmente existe na tabela (testando 'ativo' ou 'autorizado' ou 'liberado')
-      let error = null;
-      
-      // Tentativa 1: com 'ativo'
-      let res = await _supabase.from('alunos').update({ ativo: true }).eq('id', id);
-      error = res.error;
-
+      // Atualiza a coluna correta 'autorizado' na tabela correta 'se_alunos'
+      const { error } = await _supabase.from('se_alunos').update({ autorizado: true }).eq('id', id);
       if (error) {
-        // Tentativa 2: com 'autorizado'
-        res = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
-        error = res.error;
+        alert('Erro ao autorizar: ' + error.message);
       }
-
-      if (error) {
-        alert('Erro ao autorizar. Verifique o nome da coluna de status no Supabase: ' + error.message);
-      }
-      
       carregarAlunos();
     }
 
     async function remover(id) {
       if(!confirm("Tem a certeza de que deseja remover este aluno?")) return;
-      const { error } = await _supabase.from('alunos').delete().eq('id', id);
+      const { error } = await _supabase.from('se_alunos').delete().eq('id', id);
       if (error) alert('Erro ao excluir: ' + error.message);
       carregarAlunos();
     }
