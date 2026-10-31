@@ -43,37 +43,35 @@
           <th>Senha</th>
           <th>Turma</th>
           <th>Estado</th>
-          <th>Evolução</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody id="tabela-alunos-corpo">
-        <tr><td colspan="7">A carregar dados dos alunos...</td></tr>
+        <tr><td colspan="6">A carregar dados dos alunos...</td></tr>
       </tbody>
     </table>
   </div>
 
   <script>
     const SUPABASE_URL = 'https://fdgusflerezdggcwubvp.supabase.co';
-    const SUPABASE_KEY = 'SUA_CHAVE_ANON_ANTIGA_AQUI_COMEÇANDO_COM_eyJ...';
+    // Chave JWT correta informada
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBueWJlbmxmYXpkamdxbnl1eXBuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNTQ1MDcsImV4cCI6MjEwODgzMDUwN30.TtcIO--x_hhetep8aHJcpiqlnX9Z6Zxn5bud3uc6e_I';
+    
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarPainel() {
-      // Chamada ultra-simplificada para evitar qualquer caractere indesejado na URL
-      const { data: alunos, error } = await _supabase
-        .from('se_alunos')
-        .select('id, nome, usuario, senha, turma, autorizado, moedas');
-      
+      // Consulta limpa sem caracteres corrompidos
+      const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
       if (error) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color: #f75a68;">Erro ao carregar alunos: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color: #f75a68;">Erro ao carregar alunos: ${error.message}</td></tr>`;
         return;
       }
 
       if (!alunos || alunos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">Nenhum aluno registado ainda.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6">Nenhum aluno registado ainda.</td></tr>';
         return;
       }
 
@@ -86,7 +84,6 @@
           <td><input type="text" id="senha_${al.id}" value="${al.senha || ''}"></td>
           <td><input type="text" id="turma_${al.id}" value="${al.turma || ''}" style="width: 70px;"></td>
           <td style="color:${statusLiberado ? '#04d361':'#f39c12'}">${statusLiberado ? 'Liberado':'Pendente'}</td>
-          <td><span style="font-size: 12px; color: #00b4d8;">Moedas: ${al.moedas || 0}</span></td>
           <td>
             ${!statusLiberado ? `<button class="btn-sys btn-success" onclick="aprovar('${al.id}')">Autorizar</button>` : ''}
             <button class="btn-sys" onclick="salvarAluno('${al.id}')">Salvar</button>
