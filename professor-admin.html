@@ -17,19 +17,19 @@
 </head>
 <body>
 
-  <!-- TELA DE PROTEÇÃO / LOGIN DO PROFESSOR -->
-  <div id="login-secr-box" style="max-width: 400px; margin-top: 60px; text-align: center; display: none;" class="admin-card">
-    <h2 style="color: #e67e22;">Área Restrita</h2>
-    <p style="font-size:13px; color:#a8a8b3;">Autenticação exigida para gerenciar alunos.</p>
-    <input type="email" id="adm-email" class="auth-input" value="thiagomgp@gmail.com" placeholder="E-mail do Professor">
-    <input type="password" id="adm-senha" class="auth-input" placeholder="Senha do Supabase">
-    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="autenticarProfessorManual()">Acessar Painel</button>
+  <!-- TELA DE BLOQUEIO SE NÃO ESTIVER LOGADO -->
+  <div id="login-secr-box" style="max-width: 450px; margin-top: 60px; text-align: center; display: none;" class="admin-card">
+    <h2 style="color: #e67e22;">Acesso Restrito</h2>
+    <p style="font-size:13px; color:#a8a8b3;">Para aceder ao painel, faça login primeiro com a sua conta de Administrador no portal principal ou clique abaixo para entrar diretamente:</p>
+    <input type="email" id="adm-email" class="auth-input" value="thiagomgp@gmail.com" readonly style="color: #00b4d8; font-weight: bold;">
+    <input type="password" id="adm-senha" class="auth-input" placeholder="Digite a senha do Supabase para validação rápida">
+    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="entrarDireto()">Entrar no Painel</button>
   </div>
 
   <!-- PAINEL ADMINISTRATIVO -->
   <div id="painel-admin-box" class="admin-card" style="display: none;">
     <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos</h2>
-    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros, altere senhas e controle turmas.</p>
+    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros e controle os alunos da escola.</p>
 
     <table class="admin-table">
       <thead>
@@ -55,27 +55,27 @@
 
     const EMAIL_PROFESSOR = 'thiagomgp@gmail.com';
 
-    async function verificarSessaoAutomatica() {
+    async function verificarSessao() {
       const { data: { session } } = await _supabase.auth.getSession();
       
+      // Se já houver uma sessão ativa do professor, entra direto sem pedir nada
       if (session && session.user.email.toLowerCase() === EMAIL_PROFESSOR.toLowerCase()) {
         exibirPainelAdmin();
       } else {
-        // Se não estiver logado, exibe a caixinha para preencher a senha
+        // Tenta fazer login automático se houver cache ou exibe o botão rápido
         document.getElementById('login-secr-box').style.display = 'block';
       }
     }
 
-    async function autenticarProfessorManual() {
-      const email = document.getElementById('adm-email').value.trim();
+    async function entrarDireto() {
       const senha = document.getElementById('adm-senha').value;
+      if (!senha) return alert("Digite a senha do Supabase para validar o acesso.");
 
-      if (email.toLowerCase() !== EMAIL_PROFESSOR.toLowerCase()) {
-        return alert("Acesso negado.");
+      const { error } = await _supabase.auth.signInWithPassword({ email: EMAIL_PROFESSOR, password: senha });
+      if (error) {
+        alert("Erro na autenticação: " + error.message + "\n\nDica: Verifique a senha no painel do Supabase (Authentication > Users).");
+        return;
       }
-
-      const { error } = await _supabase.auth.signInWithPassword({ email, password: senha });
-      if (error) return alert("Erro de login: " + error.message);
 
       exibirPainelAdmin();
     }
@@ -91,7 +91,10 @@
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
-      if (!alunos) return;
+      if (!alunos || alunos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum aluno registado ainda.</td></tr>';
+        return;
+      }
 
       alunos.forEach(al => {
         const tr = document.createElement('tr');
@@ -115,7 +118,7 @@
     }
 
     async function remover(id) {
-      if(!confirm("Remover aluno?")) return;
+      if(!confirm("Tem certeza que deseja remover este aluno?")) return;
       await _supabase.from('alunos').delete().eq('id', id);
       carregarAlunos();
     }
@@ -125,7 +128,7 @@
       location.reload();
     }
 
-    window.onload = verificarSessaoAutomatica;
+    window.onload = verificarSessao;
   </script>
 </body>
 </html>
