@@ -1,25 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
-  <title>Painel Administrativo Restrito</title>
+  <title>Painel Administrativo Restrito - Professor</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121214; color: #e1e1e6; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-    .admin-card { background: #1a1a1e; border: 2px solid #e67e22; border-radius: 12px; padding: 25px; width: 100%; max-width: 1000px; box-sizing: border-box; }
+    .admin-card { background: #1a1a1e; border: 2px solid #e67e22; border-radius: 12px; padding: 25px; width: 100%; max-width: 1000px; box-sizing: border-box; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-    .admin-table th, .admin-table td { border: 1px solid #29292e; padding: 10px; text-align: left; }
+    .admin-table th, .admin-table td { border: 1px solid #29292e; padding: 12px; text-align: left; }
     .admin-table th { background: #202024; color: #e67e22; }
-    .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #00b4d8; color: #121214; }
+    .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #00b4d8; color: #121214; transition: opacity 0.2s; }
+    .btn-sys:hover { opacity: 0.85; }
     .btn-danger { background: #f75a68; color: #fff; }
+    .login-box { text-align: center; padding: 40px; }
+    input { padding: 10px; margin: 8px 0; width: 100%; max-width: 300px; background: #121214; border: 1px solid #29292e; color: #fff; border-radius: 6px; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-  <!-- PAINEL ADMINISTRATIVO DIRETO -->
-  <div id="painel-admin-box" class="admin-card">
-    <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos (Professor)</h2>
-    <p style="color: #a8a8b3; font-size: 13px;">Painel restrito carregado com sucesso. Autorize cadastros e controle os alunos da escola.</p>
+  <!-- ECRÃ DE LOGIN (Caso não esteja autenticado) -->
+  <div id="login-section" class="admin-card login-box" style="display: none;">
+    <h2 style="color: #e67e22; margin-top:0;">🔐 Acesso Restrito ao Professor</h2>
+    <p style="color: #a8a8b3; font-size: 13px;">Insira as credenciais de docente para gerir os acessos.</p>
+    <input type="email" id="email-login" placeholder="E-mail do professor"><br>
+    <input type="password" id="senha-login" placeholder="Palavra-passe"><br>
+    <button class="btn-sys" onclick="fazerLogin()" style="margin-top: 10px; padding: 10px 20px;">Entrar no Painel</button>
+    <p id="erro-login" style="color: #f75a68; font-size: 13px; margin-top: 10px;"></p>
+  </div>
+
+  <!-- PAINEL ADMINISTRATIVO -->
+  <div id="painel-admin-box" class="admin-card" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 style="color: #e67e22; margin:0;">👑 Gestão de Alunos & Acessos</h2>
+      <button class="btn-sys btn-danger" onclick="fazerLogout()">Terminar Sessão</button>
+    </div>
+    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros pendentes e controle o acesso dos alunos ao portal.</p>
 
     <table class="admin-table">
       <thead>
@@ -27,7 +43,7 @@
           <th>Nome</th>
           <th>E-mail</th>
           <th>Turma</th>
-          <th>Status</th>
+          <th>Estado</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -42,8 +58,38 @@
     const SUPABASE_KEY = 'sb_publishable_HqNyWQW4lAg5m_5NolXxjA_q7ou2fZP';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    async function verificarSessao() {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (!session) {
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('painel-admin-box').style.display = 'none';
+      } else {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('painel-admin-box').style.display = 'block';
+        carregarAlunos();
+      }
+    }
+
+    async function fazerLogin() {
+      const email = document.getElementById('email-login').value;
+      const password = document.getElementById('senha-login').value;
+      const erroEl = document.getElementById('erro-login');
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        erroEl.textContent = 'Erro ao entrar: ' + error.message;
+      } else {
+        verificarSessao();
+      }
+    }
+
+    async function fazerLogout() {
+      await _supabase.auth.signOut();
+      verificarSessao();
+    }
+
     async function carregarAlunos() {
-      const { data: alunos, error } = await _supabase.from('alunos').select('*');
+      const { data: alunos, error } = await _supabase.from('alunos').select('*').order('nome', { ascending: true });
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
@@ -74,18 +120,20 @@
     }
 
     async function aprovar(id) {
-      await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
+      const { error } = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
+      if (error) alert('Erro ao autorizar: ' + error.message);
       carregarAlunos();
     }
 
     async function remover(id) {
-      if(!confirm("Tem certeza que deseja remover este aluno?")) return;
-      await _supabase.from('alunos').delete().eq('id', id);
+      if(!confirm("Tem a certeza de que deseja remover este aluno?")) return;
+      const { error } = await _supabase.from('alunos').delete().eq('id', id);
+      if (error) alert('Erro ao excluir: ' + error.message);
       carregarAlunos();
     }
 
-    // Carrega a tabela automaticamente assim que a página abre
-    window.onload = carregarAlunos;
+    // Executa a verificação de sessão ao abrir a página
+    window.onload = verificarSessao;
   </script>
 </body>
 </html>
