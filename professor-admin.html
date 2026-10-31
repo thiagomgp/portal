@@ -10,7 +10,7 @@
     .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
     .admin-table th, .admin-table td { border: 1px solid #29292e; padding: 10px; text-align: left; }
     .admin-table th { background: #202024; color: #e67e22; }
-    .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #00b4d8; color: #121214; transition: opacity 0.2s; }
+    .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #e67e22; color: #121214; transition: opacity 0.2s; }
     .btn-sys:hover { opacity: 0.85; }
     .btn-danger { background: #f75a68; color: #fff; }
     .btn-success { background: #04d361; color: #121214; }
@@ -27,13 +27,42 @@
     <button class="btn-sys btn-success" onclick="salvarAviso()" style="margin-top: 10px;">Publicar Aviso no Mural</button>
   </div>
 
-  <!-- PAINEL DE GESTÃO DE ALUNOS & EVOLUÇÃO -->
+  <!-- PAINEL DE GESTÃO DE MÓDULOS & CONTEÚDOS -->
+  <div class="admin-card">
+    <h2 style="color: #e67e22; margin-top:0;">📚 Gestão de Módulos & Conteúdos (Tabela: se_modulos)</h2>
+    <p style="color: #a8a8b3; font-size: 13px;">Adicione ou edite os módulos e roteiros de aulas que aparecem para os alunos na aba Aulas & Materiais.</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 2fr 80px 100px; gap: 10px; margin-top: 15px;">
+      <input type="text" id="novo-id-modulo" placeholder="ID (ex: intro_ia)">
+      <input type="text" id="novo-titulo-modulo" placeholder="Título do Módulo">
+      <input type="number" id="novo-ordem-modulo" placeholder="Ordem" value="1">
+      <button class="btn-sys btn-success" onclick="adicionarModulo()">+ Criar Módulo</button>
+    </div>
+    <textarea id="novo-desc-modulo" rows="2" placeholder="Descrição e roteiro detalhado da aula..." style="margin-top: 10px;"></textarea>
+
+    <table class="admin-table" style="margin-top: 20px;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Ordem</th>
+          <th>Descrição / Roteiro</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-modulos-corpo">
+        <tr><td colspan="5">A carregar módulos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAINEL DE GESTÃO DE ALUNOS & CREDENCIAIS -->
   <div class="admin-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
       <h2 style="color: #e67e22; margin:0;">👑 Gestão de Alunos, Credenciais & Evolução</h2>
       <span style="color: #04d361; font-size: 13px; font-weight: bold;">● Controlo Total Ativo</span>
     </div>
-    <p style="color: #a8a8b3; font-size: 13px;">Consulte senhas, edite dados cadastrais, atribua turmas e acompanhe o progresso (Tabela: <code>se_alunos</code>).</p>
+    <p style="color: #a8a8b3; font-size: 13px;">Consulte senhas, edite dados cadastrais, atribua turmas e aprove novos cadastros (Tabela: <code>se_alunos</code>).</p>
 
     <table class="admin-table">
       <thead>
@@ -53,43 +82,61 @@
   </div>
 
   <script>
-    // URL corrigida apontando para o seu projeto real no Supabase
     const SUPABASE_URL = 'https://pnybenlfazdjgqnyuypn.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_2pzNR2UAF2-jfiXQDqrA3w_lwFryik0';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarPainel() {
-      const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
-      const tbody = document.getElementById('tabela-alunos-corpo');
-      tbody.innerHTML = '';
+      // 1. Carregar Alunos
+      const { data: alunos, error: errAlunos } = await _supabase.from('se_alunos').select('*');
+      const tbodyAlunos = document.getElementById('tabela-alunos-corpo');
+      tbodyAlunos.innerHTML = '';
 
-      if (error) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color: #f75a68;">Erro ao carregar alunos: ${error.message}</td></tr>`;
-        return;
+      if (errAlunos || !alunos || alunos.length === 0) {
+        tbodyAlunos.innerHTML = '<tr><td colspan="6">Nenhum aluno registado ainda.</td></tr>';
+      } else {
+        alunos.forEach(al => {
+          const statusLiberado = al.autorizado === true;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input type="text" id="nome_${al.id}" value="${al.nome || ''}"></td>
+            <td><input type="text" id="usuario_${al.id}" value="${al.usuario || ''}"></td>
+            <td><input type="text" id="senha_${al.id}" value="${al.senha || ''}"></td>
+            <td><input type="text" id="turma_${al.id}" value="${al.turma || ''}" style="width: 70px;"></td>
+            <td style="color:${statusLiberado ? '#04d361':'#f39c12'}">${statusLiberado ? 'Liberado':'Pendente'}</td>
+            <td>
+              ${!statusLiberado ? `<button class="btn-sys btn-success" onclick="aprovar('${al.id}')">Autorizar</button>` : ''}
+              <button class="btn-sys" onclick="salvarAluno('${al.id}')">Salvar</button>
+              <button class="btn-sys btn-danger" onclick="removerAluno('${al.id}')">Excluir</button>
+            </td>
+          `;
+          tbodyAlunos.appendChild(tr);
+        });
       }
 
-      if (!alunos || alunos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Nenhum aluno registado ainda.</td></tr>';
-        return;
-      }
+      // 2. Carregar Módulos
+      const { data: modulos, error: errModulos } = await _supabase.from('se_modulos').select('*').order('ordem', { ascending: true });
+      const tbodyModulos = document.getElementById('tabela-modulos-corpo');
+      tbodyModulos.innerHTML = '';
 
-      alunos.forEach(al => {
-        const statusLiberado = al.autorizado === true;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="text" id="nome_${al.id}" value="${al.nome || ''}"></td>
-          <td><input type="text" id="usuario_${al.id}" value="${al.usuario || ''}"></td>
-          <td><input type="text" id="senha_${al.id}" value="${al.senha || ''}"></td>
-          <td><input type="text" id="turma_${al.id}" value="${al.turma || ''}" style="width: 70px;"></td>
-          <td style="color:${statusLiberado ? '#04d361':'#f39c12'}">${statusLiberado ? 'Liberado':'Pendente'}</td>
-          <td>
-            ${!statusLiberado ? `<button class="btn-sys btn-success" onclick="aprovar('${al.id}')">Autorizar</button>` : ''}
-            <button class="btn-sys" onclick="salvarAluno('${al.id}')">Salvar</button>
-            <button class="btn-sys btn-danger" onclick="remover('${al.id}')">Excluir</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+      if (errModulos || !modulos || modulos.length === 0) {
+        tbodyModulos.innerHTML = '<tr><td colspan="5">Nenhum módulo registado.</td></tr>';
+      } else {
+        modulos.forEach(mod => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${mod.id}</code></td>
+            <td><input type="text" id="mod_tit_${mod.id}" value="${mod.titulo || ''}"></td>
+            <td><input type="number" id="mod_ord_${mod.id}" value="${mod.ordem || 1}" style="width: 60px;"></td>
+            <td><textarea id="mod_desc_${mod.id}" rows="2">${mod.descricao || ''}</textarea></td>
+            <td>
+              <button class="btn-sys" onclick="salvarModulo('${mod.id}')">Salvar</button>
+              <button class="btn-sys btn-danger" onclick="removerModulo('${mod.id}')">Excluir</button>
+            </td>
+          `;
+          tbodyModulos.appendChild(tr);
+        });
+      }
 
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
       if(avisoSalvo) {
@@ -104,12 +151,8 @@
       const turma = document.getElementById(`turma_${id}`).value;
 
       const { error } = await _supabase.from('se_alunos').update({ nome, usuario, senha, turma }).eq('id', id);
-      if (error) {
-        alert('Erro ao atualizar aluno: ' + error.message);
-      } else {
-        alert('Dados do aluno atualizados com sucesso!');
-        carregarPainel();
-      }
+      if (error) alert('Erro ao atualizar: ' + error.message);
+      else { alert('Aluno atualizado com sucesso!'); carregarPainel(); }
     }
 
     async function aprovar(id) {
@@ -118,9 +161,48 @@
       carregarPainel();
     }
 
-    async function remover(id) {
-      if(!confirm("Tem a certeza de que deseja remover este aluno?")) return;
+    async function removerAluno(id) {
+      if(!confirm("Remover este aluno?")) return;
       const { error } = await _supabase.from('se_alunos').delete().eq('id', id);
+      if (error) alert('Erro ao excluir: ' + error.message);
+      carregarPainel();
+    }
+
+    async function adicionarModulo() {
+      const id = document.getElementById('novo-id-modulo').value.trim();
+      const titulo = document.getElementById('novo-titulo-modulo').value.trim();
+      const ordem = parseInt(document.getElementById('novo-ordem-modulo').value) || 1;
+      const descricao = document.getElementById('novo-desc-modulo').value.trim();
+
+      if (!id || !titulo) {
+        alert('Preencha pelo menos o ID e o Título do módulo!');
+        return;
+      }
+
+      const { error } = await _supabase.from('se_modulos').insert([{ id, titulo, ordem, descricao, ativo: true }]);
+      if (error) alert('Erro ao criar módulo: ' + error.message);
+      else {
+        alert('Módulo criado com sucesso!');
+        document.getElementById('novo-id-modulo').value = '';
+        document.getElementById('novo-titulo-modulo').value = '';
+        document.getElementById('novo-desc-modulo').value = '';
+        carregarPainel();
+      }
+    }
+
+    async function salvarModulo(id) {
+      const titulo = document.getElementById(`mod_tit_${id}`).value;
+      const ordem = parseInt(document.getElementById(`mod_ord_${id}`).value) || 1;
+      const descricao = document.getElementById(`mod_desc_${id}`).value;
+
+      const { error } = await _supabase.from('se_modulos').update({ titulo, ordem, descricao }).eq('id', id);
+      if (error) alert('Erro ao atualizar módulo: ' + error.message);
+      else { alert('Módulo atualizado com sucesso!'); carregarPainel(); }
+    }
+
+    async function removerModulo(id) {
+      if(!confirm("Tem certeza de que deseja excluir este módulo?")) return;
+      const { error } = await _supabase.from('se_modulos').delete().eq('id', id);
       if (error) alert('Erro ao excluir: ' + error.message);
       carregarPainel();
     }
