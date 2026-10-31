@@ -115,6 +115,12 @@
     }
 
     async function carregarPortalAluno() {
+      // Carrega informações do aluno logado
+      const nomeSalvo = localStorage.getItem('aluno_logado_nome');
+      if (nomeSalvo) {
+        document.getElementById('nome-aluno-logado').innerText = nomeSalvo;
+      }
+
       // Carregar aviso do mural publicado no painel do professor
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
       if(avisoSalvo) {
@@ -141,10 +147,15 @@
           <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo curricular interativo.'}</p>
           <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aulas & Materiais</button>
         `;
-        // Torna o cartão clicable para abrir os materiais daquele módulo
         div.onclick = () => carregarMateriaisDoModulo(mod.id, mod.titulo);
         containerModulos.appendChild(div);
       });
+    }
+
+    function sair() {
+      localStorage.removeItem('aluno_logado_id');
+      localStorage.removeItem('aluno_logado_nome');
+      window.location.href = 'login.html';
     }
 
     async function carregarMateriaisDoModulo(idModulo, tituloModulo) {
