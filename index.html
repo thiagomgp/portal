@@ -120,8 +120,17 @@
 
     async function carregarPortalAluno() {
       const nomeSalvo = localStorage.getItem('aluno_logado_nome');
+      const alunoId = localStorage.getItem('aluno_logado_id');
+
       if (nomeSalvo) {
         document.getElementById('nome-aluno-logado').innerText = nomeSalvo;
+      }
+
+      // Consulta a turma do aluno logado no Supabase
+      let turmaAluno = 'TODAS';
+      if (alunoId) {
+        const { data: aluno } = await _supabase.from('se_alunos').select('turma').eq('id', alunoId).single();
+        if (aluno && aluno.turma) turmaAluno = aluno.turma;
       }
 
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
@@ -131,17 +140,26 @@
         document.getElementById('texto-aviso-aluno').innerText = "Conclua a leitura dos módulos na aba Aulas & Materiais para garantir bônus de Méritos Acadêmicos!";
       }
 
-      // Carrega os módulos da tabela se_modulos ordenados por 'ordem'
+      // Carrega módulos do Supabase
       const { data: modulos, error } = await _supabase.from('se_modulos').select('*').order('ordem', { ascending: true });
       const containerModulos = document.getElementById('lista-modulos-aluno');
       
       if (error || !modulos || modulos.length === 0) {
-        containerModulos.innerHTML = '<p style="color: #f75a68;">Nenhum módulo encontrado no banco de dados.</p>';
+        containerModulos.innerHTML = '<p style="color: #f75a68;">Nenhum módulo disponível no momento.</p>';
         return;
       }
 
       containerModulos.innerHTML = '';
-      modulos.forEach(mod => {
+      
+      // Filtra módulos atribuídos à turma do aluno ou liberados para TODAS
+      const modulosFiltrados = modulos.filter(m => !m.turma_permitida || m.turma_permitida === 'TODAS' || m.turma_permitida === turmaAluno);
+
+      if (modulosFiltrados.length === 0) {
+        containerModulos.innerHTML = '<p style="color: #f39c12;">Nenhum módulo liberado para a sua turma ainda.</p>';
+        return;
+      }
+
+      modulosFiltrados.forEach(mod => {
         const div = document.createElement('div');
         div.className = 'module-card';
         div.innerHTML = `
@@ -149,7 +167,6 @@
           <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo curricular interativo.'}</p>
           <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aula</button>
         `;
-        // Ao clicar, exibe diretamente os dados do módulo
         div.onclick = () => abrirDetalheModulo(mod);
         containerModulos.appendChild(div);
       });
