@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Administrativo Restrito</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121214; color: #e1e1e6; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .admin-card { background: #1a1a1e; border: 2px solid #e67e22; border-radius: 12px; padding: 25px; width: 100%; max-width: 1000px; box-sizing: border-box; }
+    .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+    .admin-table th, .admin-table td { border: 1px solid #29292e; padding: 10px; text-align: left; }
+    .admin-table th { background: #202024; color: #e67e22; }
+    .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #00b4d8; color: #121214; }
+    .btn-danger { background: #f75a68; color: #fff; }
+    .auth-input { width: 100%; padding: 10px; margin-bottom: 10px; background: #121214; border: 1px solid #29292e; border-radius: 6px; color: #e1e1e6; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE PROTEÇÃO / LOGIN DO PROFESSOR -->
+  <div id="login-secr-box" style="max-width: 400px; margin-top: 60px; text-align: center;" class="admin-card">
+    <h2 style="color: #e67e22;">Área Restrita</h2>
+    <p style="font-size:13px; color:#a8a8b3;">Autenticação exigida para gerenciar alunos.</p>
+    <input type="email" id="adm-email" class="auth-input" placeholder="E-mail do Professor">
+    <input type="password" id="adm-senha" class="auth-input" placeholder="Senha">
+    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="autenticarProfessor()">Acessar Painel</button>
+  </div>
+
+  <!-- PAINEL ADMINISTRATIVO (OCULTO ATÉ LOGIN) -->
+  <div id="painel-admin-box" class="admin-card" style="display: none;">
+    <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos</h2>
+    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros, altere senhas e controle turmas.</p>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Turma</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-alunos-corpo">
+        <!-- Preenchido via script -->
+      </tbody>
+    </table>
+    <button class="btn-sys" style="margin-top: 20px;" onclick="_supabase.auth.signOut().then(()=>location.reload())">Sair do Painel</button>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://fdgusflerezdggcwubvp.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_HqNyWQW4lAg5m_5NolXxjA_q7ou2fZP';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const EMAIL_PROFESSOR = 'thiagomgp@gmail.com';
+
+    async function autenticarProfessor() {
+      const email = document.getElementById('adm-email').value.trim();
+      const senha = document.getElementById('adm-senha').value;
+
+      if (email.toLowerCase() !== EMAIL_PROFESSOR.toLowerCase()) {
+        return alert("Acesso negado: Credenciais inválidas para esta área.");
+      }
+
+      const { error } = await _supabase.auth.signInWithPassword({ email, password: senha });
+      if (error) return alert("Erro de login: " + error.message);
+
+      verificarEExibirPainel();
+    }
+
+    async function verificarEExibirPainel() {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session && session.user.email.toLowerCase() === EMAIL_PROFESSOR.toLowerCase()) {
+        document.getElementById('login-secr-box').style.display = 'none';
+        document.getElementById('painel-admin-box').style.display = 'block';
+        carregarAlunos();
+      }
+    }
+
+    async function carregarAlunos() {
+      const { data: alunos } = await _supabase.from('alunos').select('*');
+      const tbody = document.getElementById('tabela-alunos-corpo');
+      tbody.innerHTML = '';
+
+      if (!alunos) return;
+
+      alunos.forEach(al => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${al.nome || 'Aluno'}</td>
+          <td>${al.email}</td>
+          <td>${al.turma || 'Geral'}</td>
+          <td style="color:${al.autorizado ? '#04d361':'#f39c12'}">${al.autorizado ? 'Liberado':'Pendente'}</td>
+          <td>
+            ${!al.autorizado ? `<button class="btn-sys" onclick="aprovar('${al.id}')">Autorizar</button>` : ''}
+            <button class="btn-sys btn-danger" onclick="remover('${al.id}')">Excluir</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function aprovar(id) {
+      await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
+      carregarAlunos();
+    }
+
+    async function remover(id) {
+      if(!confirm("Remover aluno?")) return;
+      await _supabase.from('alunos').delete().eq('id', id);
+      carregarAlunos();
+    }
+
+    window.onload = verificarEExibirPainel;
+  </script>
+</body>
+</html>
