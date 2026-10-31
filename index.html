@@ -360,7 +360,7 @@
       { id: 2, nome: 'Cidadania Digital', disciplina: 'CD', efeito_descricao: 'Segurança e ética online.', ataque: 3, vida: 3, raridade: 'Comum', custo_energia: 2, tipo: 'aliado' },
       { id: 3, nome: 'Educação Bancária', disciplina: 'PED', efeito_descricao: 'Conceito tradicional.', ataque: 2, vida: 4, raridade: 'Comum', custo_energia: 2, tipo: 'aliado' },
       { id: 4, nome: 'Pierre de Coubertin', disciplina: 'EF', efeito_descricao: 'Olimpíadas Modernas.', ataque: 2, vida: 5, raridade: 'Comum', custo_energia: 2, tipo: 'aliado' },
-      { id: 5, nome: 'Revisão Intensiva', disciplina: 'GER', efeito_descricao: 'Ganha +2 de Energia.', ataque: 0, vida: 0, raridade: 'Comum', custo_energia: 2, tipo: 'efeito', duracao_efeito: 3 },
+      { id: 5, nome: 'Revisão Intensiva', disciplina: 'GER', efeito_descricao: 'Ganha +2 de Energia por 3 turnos.', ataque: 0, vida: 0, raridade: 'Comum', custo_energia: 2, tipo: 'efeito', duracao_efeito: 3 },
       { id: 6, nome: 'Paulo Freire', disciplina: 'PED', efeito_descricao: 'Patrono da Educação.', ataque: 4, vida: 6, raridade: 'Rara', custo_energia: 4, tipo: 'aliado' }
     ];
 
@@ -382,6 +382,7 @@
     let maoJogador = [];
     let contadorTurnos = 0;
     let cartaAtacanteSelecionada = null;
+    let primeiraCompraGratisUsada = false;
 
     function mudarAbaPortal(idTela) {
       if (!alunoLogado && idTela !== 'screen-auth') return mudarAbaPortal('screen-auth');
@@ -507,8 +508,11 @@
     function fecharModalLoja() { document.getElementById('shop-modal').style.display = 'none'; }
 
     async function comprarBooster(tipo, custoBase) {
-      if ((alunoLogado.creditos_academicos || 0) < custoBase) return alert("Méritos insuficientes!");
-      const novos = alunoLogado.creditos_academicos - custoBase;
+      const temDesconto = alunoLogado.moldura_equipada === 'moldura_diamante';
+      const custo = temDesconto ? Math.round(custoBase * 0.8) : custoBase;
+
+      if ((alunoLogado.creditos_academicos || 0) < custo) return alert("Méritos insuficientes!");
+      const novos = alunoLogado.creditos_academicos - custo;
       await _supabase.from('alunos').update({ creditos_academicos: novos }).eq('id', alunoLogado.id);
       alunoLogado.creditos_academicos = novos;
       atualizarTopBarLobby();
@@ -598,7 +602,7 @@
       alert("Deck salvo!"); fecharModalDeckBuilder();
     }
 
-    /* SISTEMA DE COMBATE ESTILO MAGIC (COM DEFENSORES E HP 20 FIXO) */
+    /* SISTEMA DE COMBATE ESTILO MAGIC (COM DEFENSORES E BÔNUS DE MOLDURAS) */
     async function iniciarPartida(modo) {
       if (deckPersonalizado.length < 20) return alert("Monte um deck com pelo menos 20 cartas para duelar!");
       modoJogoAtual = modo;
@@ -612,26 +616,59 @@
 
       deckGlobal = [...deckPersonalizado].sort(() => Math.random() - 0.5);
       maoJogador = []; cartasUsadasPelaIA = []; efeitoAtivoStatus = null;
-      vidaJogador = 20; vidaOponente = 20; energiaJogador = 3; contadorTurnos = 0; jogoEncerrado = false;
+      
+      // RESTAURANDO EFEITOS PASSIVOS DAS MOLDURAS
+      const molduraAtiva = alunoLogado ? (alunoLogado.moldura_equipada || 'padrao') : 'padrao';
+      vidaJogador = (molduraAtiva === 'moldura_esportiva') ? 22 : 20; 
+      vidaOponente = 20; 
+      energiaJogador = (molduraAtiva === 'moldura_prata') ? 4 : 3; 
+
+      primeiraCompraGratisUsada = false;
+      contadorTurnos = 0; 
+      jogoEncerrado = false;
 
       document.getElementById('player-life').innerText = vidaJogador;
       document.getElementById('opp-life').innerText = vidaOponente;
+      document.getElementById('player-energy').innerText = energiaJogador;
       document.getElementById('player-field').innerHTML = '<span class="field-placeholder">Sua mesa está vazia</span>';
       document.getElementById('opponent-field').innerHTML = '<span class="field-placeholder">Nenhum aliado no campo</span>';
 
-      for(let i=0; i<3; i++) comprarCartaDireto();
+      const numCartasIniciais = (molduraAtiva === 'moldura_criativa') ? 4 : 3;
+      for(let i=0; i<numCartasIniciais; i++) comprarCartaDireto();
+      
       iniciarNovaRodada();
     }
 
     function iniciarNovaRodada() {
       if (jogoEncerrado) return;
       contadorTurnos++; cartaAtacanteSelecionada = null;
-      energiaJogador = Math.min(10, energiaJogador + 1);
+      
+      if (efeitoAtivoStatus) {
+        efeitoAtivoStatus.duracao--;
+        if (efeitoAtivoStatus.duracao <= 0) {
+          anunciar(`O efeito ${efeitoAtivoStatus.nome} expirou!`);
+          efeitoAtivoStatus = null;
+        }
+        atualizarPainelEfeitos();
+      }
+
+      let ganhoEnergia = 1;
+      if (efeitoAtivoStatus && efeitoAtivoStatus.nome.includes('Energia')) ganhoEnergia += 1;
+
+      energiaJogador = Math.min(10, energiaJogador + ganhoEnergia);
       document.getElementById('player-energy').innerText = energiaJogador;
 
       if (modoJogoAtual === 'ia') executarAcoesIA();
       anunciar(`Rodada ${contadorTurnos}: Selecione sua carta atacante ou passe o turno.`);
-      reativarTodasCartas(); limparDestaquesCombate();
+      reativarTodasCartas(); 
+      limparDestaquesCombate();
+    }
+
+    function reativarTodasCartas() {
+      document.querySelectorAll('#player-field .field-card-wrapper').forEach(w => {
+        w.dataset.statusAcao = "livre"; 
+        w.classList.remove('exausto');
+      });
     }
 
     function executarAcoesIA() {
@@ -651,6 +688,7 @@
         oppWrapper.innerHTML = `<div style="position:absolute; top:-8px; left:-8px; background:#f75a68; color:#121214; font-weight:900; font-size:11px; padding:2px 6px; border-radius:10px; z-index:10;">❤️ <span class="val-vida-ia">${cIa.vida || 3}</span></div>` + criarElementoVisualCarta(cIa).outerHTML;
         oppWrapper.onclick = () => { if (cartaAtacanteSelecionada) executarAtaqueCartaParaCarta(cartaAtacanteSelecionada, oppWrapper); };
         oppField.appendChild(oppWrapper);
+        document.getElementById('opp-field-count').innerText = `Campo: ${oppField.querySelectorAll('.field-card-wrapper').length} cartas`;
       }
     }
 
@@ -691,9 +729,20 @@
     }
 
     function comprarCartaDireto() { if (deckGlobal.length > 0) { maoJogador.push(deckGlobal.pop()); renderizarMao(); } }
+    
     function comprarCarta() {
-      if (energiaJogador < 1 || deckGlobal.length === 0) return;
-      energiaJogador -= 1; document.getElementById('player-energy').innerText = energiaJogador;
+      if (jogoEncerrado || deckGlobal.length === 0) return;
+      
+      const molduraAtiva = alunoLogado ? (alunoLogado.moldura_equipada || 'padrao') : 'padrao';
+      const eSabioEspecial = (molduraAtiva === 'moldura_sabio' && contadorTurnos === 1 && !primeiraCompraGratisUsada);
+      const custo = eSabioEspecial ? 0 : 1;
+
+      if (energiaJogador < custo) return anunciar("Energia insuficiente!");
+
+      energiaJogador -= custo;
+      if (eSabioEspecial) primeiraCompraGratisUsada = true;
+
+      document.getElementById('player-energy').innerText = energiaJogador;
       maoJogador.push(deckGlobal.pop()); renderizarMao();
     }
 
@@ -708,11 +757,12 @@
 
     function criarElementoVisualCarta(carta) {
       const cardEl = document.createElement('div');
-      cardEl.className = `card ${carta.raridade ? carta.raridade.toLowerCase() : 'comum'}`;
+      const eEfeito = carta.tipo === 'efeito' || carta.duracao_efeito > 0;
+      cardEl.className = `card ${eEfeito ? 'efeito' : (carta.raridade ? carta.raridade.toLowerCase() : 'comum')}`;
       cardEl.innerHTML = `
         <div class="card-header"><span class="card-cost">${carta.custo_energia}</span><span class="card-discipline-discrete">${carta.disciplina || 'BNCC'}</span></div>
         <div class="card-title">${carta.nome}</div>
-        <div class="card-body">${carta.efeito_descricao || ''}</div>
+        <div class="card-body">${carta.efeito_descricao || ''} ${eEfeito ? `<br><b>⏳ Duração: ${carta.duracao_efeito} Turnos</b>` : ''}</div>
         <div class="card-footer"><span class="stat-attack">⚔️ ${carta.ataque || 0}</span><span class="stat-life">🛡️ ${carta.vida || 0}</span></div>
       `;
       return cardEl;
@@ -720,10 +770,19 @@
 
     function jogarCartaNoCampo(index) {
       const c = maoJogador[index];
-      if (energiaJogador < c.custo_energia) return;
+      if (energiaJogador < c.custo_energia) return anunciar("Energia insuficiente!");
+
       energiaJogador -= c.custo_energia;
       document.getElementById('player-energy').innerText = energiaJogador;
       maoJogador.splice(index, 1); renderizarMao();
+
+      // TRATAMENTO DE CARTAS DE EFEITO
+      if (c.tipo === 'efeito' || c.duracao_efeito > 0) {
+        efeitoAtivoStatus = { nome: c.nome, duracao: c.duracao_efeito || 2 };
+        atualizarPainelEfeitos();
+        anunciar(`Efeito ${c.nome} ativado por ${c.duracao_efeito} turnos!`);
+        return;
+      }
 
       const field = document.getElementById('player-field');
       const ph = field.querySelector('.field-placeholder'); if (ph) ph.remove();
@@ -790,9 +849,24 @@
       if (vidaOponente <= 0) vencerPartidaIA();
     }
 
+    function atualizarPainelEfeitos() {
+      const bar = document.getElementById('active-effects-bar');
+      if (efeitoAtivoStatus) {
+        document.getElementById('active-effect-name').innerText = efeitoAtivoStatus.nome;
+        document.getElementById('active-effect-turns').innerText = efeitoAtivoStatus.duracao;
+        bar.style.display = 'flex';
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
     async function vencerPartidaIA() {
       jogoEncerrado = true; nivelIA += 1;
-      const novos = (alunoLogado.creditos_academicos || 0) + 30;
+      
+      const molduraAtiva = alunoLogado ? (alunoLogado.moldura_equipada || 'padrao') : 'padrao';
+      let bonusMoedas = (molduraAtiva === 'moldura_dourada') ? 33 : 30;
+
+      const novos = (alunoLogado.creditos_academicos || 0) + bonusMoedas;
       alunoLogado.creditos_academicos = novos;
       await _supabase.from('alunos').update({ nivel_ia: nivelIA, creditos_academicos: novos }).eq('id', alunoLogado.id);
       document.getElementById('reward-modal').style.display = 'flex';
