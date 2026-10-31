@@ -860,6 +860,45 @@
       }
     }
 
+    async function verificarAcessoAluno() {
+    try {
+        // Exemplo de obtenção da sessão atual ou identificador do aluno armazenado localmente
+        const emailOuMatricula = localStorage.getItem('aluno_identificador') || document.getElementById('inputMatricula')?.value;
+
+        if (!emailOuMatricula) {
+            console.warn("Nenhum identificador de aluno encontrado.");
+            return false;
+        }
+
+        // Consulta na tabela de alunos/perfis no Supabase
+        const { data, error } = await supabase
+            .from('alunos') // Ajuste o nome da tabela conforme o seu banco (ex: 'perfis', 'usuarios')
+            .select('*')
+            .eq('email', emailOuMatricula) // ou .eq('matricula', emailOuMatricula)
+            .single();
+
+        if (error || !data) {
+            console.error("Erro ao verificar acesso do aluno:", error?.message || "Aluno não encontrado.");
+            alert("Acesso negado. Verifique suas credenciais.");
+            return false;
+        }
+
+        // Validação bem-sucedida: atualiza o estado da interface ou armazena os dados da sessão
+        window.alunoAtual = data;
+        localStorage.setItem('aluno_logado', JSON.stringify(data));
+        
+        // Exemplo de chamada para alternar a tela no portal
+        if (typeof alternarTela === 'function') {
+            alternarTela('tela-principal');
+        }
+
+        return true;
+    } catch (err) {
+        console.error("Erro inesperado em verificarAcessoAluno:", err);
+        return false;
+    }
+}
+
     async function vencerPartidaIA() {
       jogoEncerrado = true; nivelIA += 1;
       
