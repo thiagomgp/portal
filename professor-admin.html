@@ -46,6 +46,7 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarAlunos() {
+      // Consulta direcionada estritamente à tabela 'alunos'
       const { data: alunos, error } = await _supabase.from('alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
@@ -61,7 +62,6 @@
       }
 
       alunos.forEach(al => {
-        // Compatível tanto com 'autorizado' quanto com 'ativo' ou outros campos booleanos
         const statusLiberado = al.autorizado !== undefined ? al.autorizado : al.ativo;
         
         const tr = document.createElement('tr');
@@ -80,10 +80,8 @@
     }
 
     async function aprovar(id) {
-      // Tenta atualizar a coluna 'autorizado'. Se na sua tabela o campo for outro (ex: 'ativo'), altere aqui.
       const { error } = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
       if (error) {
-        // Tentativa de fallback automático caso o campo seja 'ativo'
         const { error: err2 } = await _supabase.from('alunos').update({ ativo: true }).eq('id', id);
         if (err2) {
           alert('Erro ao autorizar: ' + error.message);
