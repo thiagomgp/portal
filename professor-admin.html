@@ -12,24 +12,14 @@
     .admin-table th { background: #202024; color: #e67e22; }
     .btn-sys { border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 12px; background: #00b4d8; color: #121214; }
     .btn-danger { background: #f75a68; color: #fff; }
-    .auth-input { width: 100%; padding: 10px; margin-bottom: 10px; background: #121214; border: 1px solid #29292e; border-radius: 6px; color: #e1e1e6; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-  <!-- TELA DE BLOQUEIO SE NÃO ESTIVER LOGADO -->
-  <div id="login-secr-box" style="max-width: 450px; margin-top: 60px; text-align: center; display: none;" class="admin-card">
-    <h2 style="color: #e67e22;">Acesso Restrito</h2>
-    <p style="font-size:13px; color:#a8a8b3;">Para aceder ao painel, faça login primeiro com a sua conta de Administrador no portal principal ou clique abaixo para entrar diretamente:</p>
-    <input type="email" id="adm-email" class="auth-input" value="thiagomgp@gmail.com" readonly style="color: #00b4d8; font-weight: bold;">
-    <input type="password" id="adm-senha" class="auth-input" placeholder="Digite a senha do Supabase para validação rápida">
-    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="entrarDireto()">Entrar no Painel</button>
-  </div>
-
-  <!-- PAINEL ADMINISTRATIVO -->
-  <div id="painel-admin-box" class="admin-card" style="display: none;">
-    <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos</h2>
-    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros e controle os alunos da escola.</p>
+  <!-- PAINEL ADMINISTRATIVO DIRETO -->
+  <div id="painel-admin-box" class="admin-card">
+    <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos (Professor)</h2>
+    <p style="color: #a8a8b3; font-size: 13px;">Painel restrito carregado com sucesso. Autorize cadastros e controle os alunos da escola.</p>
 
     <table class="admin-table">
       <thead>
@@ -42,10 +32,9 @@
         </tr>
       </thead>
       <tbody id="tabela-alunos-corpo">
-        <!-- Preenchido via script -->
+        <tr><td colspan="5">A carregar dados dos alunos...</td></tr>
       </tbody>
     </table>
-    <button class="btn-sys" style="margin-top: 20px;" onclick="fazerLogoutAdmin()">Sair do Painel</button>
   </div>
 
   <script>
@@ -53,43 +42,15 @@
     const SUPABASE_KEY = 'sb_publishable_HqNyWQW4lAg5m_5NolXxjA_q7ou2fZP';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const EMAIL_PROFESSOR = 'thiagomgp@gmail.com';
-
-    async function verificarSessao() {
-      const { data: { session } } = await _supabase.auth.getSession();
-      
-      // Se já houver uma sessão ativa do professor, entra direto sem pedir nada
-      if (session && session.user.email.toLowerCase() === EMAIL_PROFESSOR.toLowerCase()) {
-        exibirPainelAdmin();
-      } else {
-        // Tenta fazer login automático se houver cache ou exibe o botão rápido
-        document.getElementById('login-secr-box').style.display = 'block';
-      }
-    }
-
-    async function entrarDireto() {
-      const senha = document.getElementById('adm-senha').value;
-      if (!senha) return alert("Digite a senha do Supabase para validar o acesso.");
-
-      const { error } = await _supabase.auth.signInWithPassword({ email: EMAIL_PROFESSOR, password: senha });
-      if (error) {
-        alert("Erro na autenticação: " + error.message + "\n\nDica: Verifique a senha no painel do Supabase (Authentication > Users).");
-        return;
-      }
-
-      exibirPainelAdmin();
-    }
-
-    function exibirPainelAdmin() {
-      document.getElementById('login-secr-box').style.display = 'none';
-      document.getElementById('painel-admin-box').style.display = 'block';
-      carregarAlunos();
-    }
-
     async function carregarAlunos() {
-      const { data: alunos } = await _supabase.from('alunos').select('*');
+      const { data: alunos, error } = await _supabase.from('alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
+
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color: #f75a68;">Erro ao carregar dados: ${error.message}</td></tr>`;
+        return;
+      }
 
       if (!alunos || alunos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5">Nenhum aluno registado ainda.</td></tr>';
@@ -123,12 +84,8 @@
       carregarAlunos();
     }
 
-    async function fazerLogoutAdmin() {
-      await _supabase.auth.signOut();
-      location.reload();
-    }
-
-    window.onload = verificarSessao;
+    // Carrega a tabela automaticamente assim que a página abre
+    window.onload = carregarAlunos;
   </script>
 </body>
 </html>
