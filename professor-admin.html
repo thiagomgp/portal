@@ -43,18 +43,20 @@
           <th>Senha</th>
           <th>Turma</th>
           <th>Estado</th>
+          <th>Evolução</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody id="tabela-alunos-corpo">
-        <tr><td colspan="6">A carregar dados dos alunos...</td></tr>
+        <tr><td colspan="7">A carregar dados dos alunos...</td></tr>
       </tbody>
     </table>
   </div>
 
   <script>
     const SUPABASE_URL = 'https://fdgusflerezdggcwubvp.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_HqNyWQW4lAg5m_5NolXxjA_q7ou2fZP';
+    // Chave de API atualizada conforme o seu painel atual do Supabase
+    const SUPABASE_KEY = 'sb_publishable_2pzNR2UAF2-jf1X0DqrA3w_1wFry';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarPainel() {
@@ -63,12 +65,12 @@
       tbody.innerHTML = '';
 
       if (error) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color: #f75a68;">Erro ao carregar alunos: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color: #f75a68;">Erro ao carregar alunos: ${error.message}</td></tr>`;
         return;
       }
 
       if (!alunos || alunos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Nenhum aluno registado ainda.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">Nenhum aluno registado ainda.</td></tr>';
         return;
       }
 
@@ -81,6 +83,7 @@
           <td><input type="text" id="senha_${al.id}" value="${al.senha || ''}"></td>
           <td><input type="text" id="turma_${al.id}" value="${al.turma || ''}" style="width: 70px;"></td>
           <td style="color:${statusLiberado ? '#04d361':'#f39c12'}">${statusLiberado ? 'Liberado':'Pendente'}</td>
+          <td><span style="font-size: 12px; color: #00b4d8;">Moedas: ${al.moedas || 0}</span></td>
           <td>
             ${!statusLiberado ? `<button class="btn-sys btn-success" onclick="aprovar('${al.id}')">Autorizar</button>` : ''}
             <button class="btn-sys" onclick="salvarAluno('${al.id}')">Salvar</button>
@@ -90,7 +93,6 @@
         tbody.appendChild(tr);
       });
 
-      // Carregar aviso salvo do mural
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
       if(avisoSalvo) {
         document.getElementById('texto-aviso').value = avisoSalvo;
