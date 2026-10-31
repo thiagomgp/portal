@@ -46,7 +46,6 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarAlunos() {
-      // Consulta direcionada estritamente à tabela 'alunos'
       const { data: alunos, error } = await _supabase.from('alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
@@ -61,8 +60,12 @@
         return;
       }
 
+      // Mostra no console do navegador as propriedades do primeiro aluno para identificarmos os nomes exatos das colunas
+      console.log("Estrutura do registro recebida do Supabase:", alunos[0]);
+
       alunos.forEach(al => {
-        const statusLiberado = al.autorizado !== undefined ? al.autorizado : al.ativo;
+        // Verifica dinamicamente qual propriedade booleana existe no objeto para definir o estado
+        const statusLiberado = al.autorizado ?? al.ativo ?? al.liberado ?? true;
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -80,13 +83,23 @@
     }
 
     async function aprovar(id) {
-      const { error } = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
+      // Tenta atualizar a coluna que realmente existe na tabela (testando 'ativo' ou 'autorizado' ou 'liberado')
+      let error = null;
+      
+      // Tentativa 1: com 'ativo'
+      let res = await _supabase.from('alunos').update({ ativo: true }).eq('id', id);
+      error = res.error;
+
       if (error) {
-        const { error: err2 } = await _supabase.from('alunos').update({ ativo: true }).eq('id', id);
-        if (err2) {
-          alert('Erro ao autorizar: ' + error.message);
-        }
+        // Tentativa 2: com 'autorizado'
+        res = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
+        error = res.error;
       }
+
+      if (error) {
+        alert('Erro ao autorizar. Verifique o nome da coluna de status no Supabase: ' + error.message);
+      }
+      
       carregarAlunos();
     }
 
