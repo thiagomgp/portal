@@ -53,12 +53,12 @@
   </div>
 
   <script>
+    // URL corrigida apontando para o seu projeto real no Supabase
     const SUPABASE_URL = 'https://pnybenlfazdjgqnyuypn.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_2pzNR2UAF2-jfiXQDqrA3w_lwFryik0'; // Cole a chave exata do seu painel aqui
+    const SUPABASE_KEY = 'sb_publishable_2pzNR2UAF2-jfiXQDqrA3w_lwFryik0';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarPainel() {
-      // Consulta limpa sem caracteres corrompidos
       const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
