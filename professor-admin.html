@@ -17,19 +17,19 @@
 </head>
 <body>
 
-  <!-- PAINEL ADMINISTRATIVO (Acesso Direto) -->
+  <!-- PAINEL ADMINISTRATIVO -->
   <div id="painel-admin-box" class="admin-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
       <h2 style="color: #e67e22; margin:0;">👑 Gestão de Alunos & Acessos</h2>
       <span style="color: #04d361; font-size: 13px; font-weight: bold;">● Modo Direto Ativo</span>
     </div>
-    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros pendentes e controle o acesso dos alunos ao portal (Tabela: <code>se_alunos</code>).</p>
+    <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros pendentes e controle o acesso dos alunos ao portal.</p>
 
     <table class="admin-table">
       <thead>
         <tr>
           <th>Nome</th>
-          <th>Usuário / Identificação</th>
+          <th>E-mail / Usuário</th>
           <th>Turma</th>
           <th>Estado</th>
           <th>Ações</th>
@@ -47,8 +47,8 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function carregarAlunos() {
-      // Corrigido para buscar na tabela correta 'se_alunos' com base na estrutura do Supabase
-      const { data: alunos, error } = await _supabase.from('se_alunos').select('*').order('nome', { ascending: true });
+      // Consulta restaurada para a tabela 'alunos' original
+      const { data: alunos, error } = await _supabase.from('alunos').select('*').order('nome', { ascending: true });
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
@@ -66,7 +66,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${al.nome || 'Aluno'}</td>
-          <td>${al.usuario || al.email || '-'}</td>
+          <td>${al.email || al.usuario || '-'}</td>
           <td>${al.turma || 'Geral'}</td>
           <td style="color:${al.autorizado ? '#04d361':'#f39c12'}">${al.autorizado ? 'Liberado':'Pendente'}</td>
           <td>
@@ -79,19 +79,19 @@
     }
 
     async function aprovar(id) {
-      const { error } = await _supabase.from('se_alunos').update({ autorizado: true }).eq('id', id);
+      const { error } = await _supabase.from('alunos').update({ autorizado: true }).eq('id', id);
       if (error) alert('Erro ao autorizar: ' + error.message);
       carregarAlunos();
     }
 
     async function remover(id) {
       if(!confirm("Tem a certeza de que deseja remover este aluno?")) return;
-      const { error } = await _supabase.from('se_alunos').delete().eq('id', id);
+      const { error } = await _supabase.from('alunos').delete().eq('id', id);
       if (error) alert('Erro ao excluir: ' + error.message);
       carregarAlunos();
     }
 
-    // Carrega os dados automaticamente ao abrir a página
+    // Executa ao carregar a página
     window.onload = carregarAlunos;
   </script>
 </body>
