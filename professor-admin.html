@@ -48,7 +48,7 @@
 
     async function carregarAlunos() {
       // Consulta restaurada para a tabela 'alunos' original
-      const { data: alunos, error } = await _supabase.from('alunos').select('*').order('nome', { ascending: true });
+      const { data: alunos, error } = await _supabase.from('se_alunos').select('*');
       const tbody = document.getElementById('tabela-alunos-corpo');
       tbody.innerHTML = '';
 
