@@ -27,15 +27,16 @@
     <button class="btn-sys btn-success" onclick="salvarAviso()" style="margin-top: 10px;">Publicar Aviso no Mural</button>
   </div>
 
-  <!-- PAINEL DE GESTÃO DE MÓDULOS & CONTEÚDOS -->
+  <!-- PAINEL DE GESTÃO DE MÓDULOS & ATRIBUIÇÃO POR TURMA -->
   <div class="admin-card">
-    <h2 style="color: #e67e22; margin-top:0;">📚 Gestão de Módulos & Conteúdos (Tabela: se_modulos)</h2>
-    <p style="color: #a8a8b3; font-size: 13px;">Adicione ou edite os módulos e roteiros de aulas que aparecem para os alunos na aba Aulas & Materiais.</p>
+    <h2 style="color: #e67e22; margin-top:0;">📚 Gestão de Módulos & Liberação por Turma</h2>
+    <p style="color: #a8a8b3; font-size: 13px;">Defina quais turmas têm permissão para acessar cada módulo (digite <code>TODAS</code> para liberar geral ou informe a turma específica ex: <code>81</code>).</p>
     
-    <div style="display: grid; grid-template-columns: 1fr 2fr 80px 100px; gap: 10px; margin-top: 15px;">
-      <input type="text" id="novo-id-modulo" placeholder="ID (ex: intro_ia)">
+    <div style="display: grid; grid-template-columns: 1fr 2fr 100px 120px 120px; gap: 10px; margin-top: 15px;">
+      <input type="text" id="novo-id-modulo" placeholder="ID (ex: modulo_4)">
       <input type="text" id="novo-titulo-modulo" placeholder="Título do Módulo">
       <input type="number" id="novo-ordem-modulo" placeholder="Ordem" value="1">
+      <input type="text" id="novo-turmas-modulo" placeholder="Turma (ex: 81 ou TODAS)" value="TODAS">
       <button class="btn-sys btn-success" onclick="adicionarModulo()">+ Criar Módulo</button>
     </div>
     <textarea id="novo-desc-modulo" rows="2" placeholder="Descrição e roteiro detalhado da aula..." style="margin-top: 10px;"></textarea>
@@ -46,12 +47,13 @@
           <th>ID</th>
           <th>Título</th>
           <th>Ordem</th>
+          <th>Turmas Permitidas</th>
           <th>Descrição / Roteiro</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody id="tabela-modulos-corpo">
-        <tr><td colspan="5">A carregar módulos...</td></tr>
+        <tr><td colspan="6">A carregar módulos...</td></tr>
       </tbody>
     </table>
   </div>
@@ -120,7 +122,7 @@
       tbodyModulos.innerHTML = '';
 
       if (errModulos || !modulos || modulos.length === 0) {
-        tbodyModulos.innerHTML = '<tr><td colspan="5">Nenhum módulo registado.</td></tr>';
+        tbodyModulos.innerHTML = '<tr><td colspan="6">Nenhum módulo registado.</td></tr>';
       } else {
         modulos.forEach(mod => {
           const tr = document.createElement('tr');
@@ -128,6 +130,7 @@
             <td><code>${mod.id}</code></td>
             <td><input type="text" id="mod_tit_${mod.id}" value="${mod.titulo || ''}"></td>
             <td><input type="number" id="mod_ord_${mod.id}" value="${mod.ordem || 1}" style="width: 60px;"></td>
+            <td><input type="text" id="mod_turma_${mod.id}" value="${mod.turma_permitida || 'TODAS'}" style="width: 100px;" placeholder="ex: 81 ou TODAS"></td>
             <td><textarea id="mod_desc_${mod.id}" rows="2">${mod.descricao || ''}</textarea></td>
             <td>
               <button class="btn-sys" onclick="salvarModulo('${mod.id}')">Salvar</button>
@@ -172,17 +175,18 @@
       const id = document.getElementById('novo-id-modulo').value.trim();
       const titulo = document.getElementById('novo-titulo-modulo').value.trim();
       const ordem = parseInt(document.getElementById('novo-ordem-modulo').value) || 1;
+      const turma_permitida = document.getElementById('novo-turmas-modulo').value.trim() || 'TODAS';
       const descricao = document.getElementById('novo-desc-modulo').value.trim();
 
       if (!id || !titulo) {
-        alert('Preencha pelo menos o ID e o Título do módulo!');
+        alert('Preencha o ID e o Título do módulo!');
         return;
       }
 
-      const { error } = await _supabase.from('se_modulos').insert([{ id, titulo, ordem, descricao, ativo: true }]);
+      const { error } = await _supabase.from('se_modulos').insert([{ id, titulo, ordem, turma_permitida, descricao, ativo: true }]);
       if (error) alert('Erro ao criar módulo: ' + error.message);
       else {
-        alert('Módulo criado com sucesso!');
+        alert('Módulo criado e atribuído com sucesso!');
         document.getElementById('novo-id-modulo').value = '';
         document.getElementById('novo-titulo-modulo').value = '';
         document.getElementById('novo-desc-modulo').value = '';
@@ -193,9 +197,10 @@
     async function salvarModulo(id) {
       const titulo = document.getElementById(`mod_tit_${id}`).value;
       const ordem = parseInt(document.getElementById(`mod_ord_${id}`).value) || 1;
+      const turma_permitida = document.getElementById(`mod_turma_${id}`).value || 'TODAS';
       const descricao = document.getElementById(`mod_desc_${id}`).value;
 
-      const { error } = await _supabase.from('se_modulos').update({ titulo, ordem, descricao }).eq('id', id);
+      const { error } = await _supabase.from('se_modulos').update({ titulo, ordem, turma_permitida, descricao }).eq('id', id);
       if (error) alert('Erro ao atualizar módulo: ' + error.message);
       else { alert('Módulo atualizado com sucesso!'); carregarPainel(); }
     }
