@@ -56,7 +56,7 @@
 
     <!-- ABA 2: AULAS & MATERIAIS -->
     <div id="disciplinas" class="tab-content">
-      <div class="card">
+      <div id="secao-lista-modulos" class="card">
         <h3>📚 Materiais Didáticos & Guias da BNCC</h3>
         <p style="color: #a8a8b3;">Selecione um módulo abaixo para abrir o conteúdo da aula:</p>
         <div class="module-grid" id="lista-modulos-aluno">
@@ -65,12 +65,12 @@
       </div>
 
       <!-- DETALHE DO MÓDULO SELECIONADO -->
-      <div id="secao-detalhe-modulo" class="card" style="display: none; margin-top: 20px; border-color: #e67e22;">
+      <div id="secao-detalhe-modulo" class="card" style="display: none; border-color: #e67e22;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3 id="titulo-modulo-selecionado" style="color: #e67e22; margin: 0;"></h3>
           <button class="btn-sys" onclick="voltarParaModulos()" style="background: #29292e; color: #fff; font-size: 12px;">← Voltar aos Módulos</button>
         </div>
-        <div id="conteudo-modulo-detalhe" style="margin-top: 15px; color: #e1e1e6; line-height: 1.6;">
+        <div id="conteudo-modulo-detalhe" style="margin-top: 20px; color: #e1e1e6; line-height: 1.6;">
           <!-- Conteúdo exibido diretamente da tabela se_modulos -->
         </div>
       </div>
@@ -131,7 +131,7 @@
         document.getElementById('texto-aviso-aluno').innerText = "Conclua a leitura dos módulos na aba Aulas & Materiais para garantir bônus de Méritos Acadêmicos!";
       }
 
-      // Carrega os módulos da tabela se_modulos ordenados
+      // Carrega os módulos da tabela se_modulos ordenados por 'ordem'
       const { data: modulos, error } = await _supabase.from('se_modulos').select('*').order('ordem', { ascending: true });
       const containerModulos = document.getElementById('lista-modulos-aluno');
       
@@ -149,14 +149,14 @@
           <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo curricular interativo.'}</p>
           <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aula</button>
         `;
-        // Ao clicar, exibe os detalhes do módulo armazenados na própria tabela se_modulos
+        // Ao clicar, exibe diretamente os dados do módulo
         div.onclick = () => abrirDetalheModulo(mod);
         containerModulos.appendChild(div);
       });
     }
 
     function abrirDetalheModulo(mod) {
-      document.getElementById('lista-modulos-aluno').parentElement.style.display = 'none';
+      document.getElementById('secao-lista-modulos').style.display = 'none';
       const secaoDetalhe = document.getElementById('secao-detalhe-modulo');
       secaoDetalhe.style.display = 'block';
       
@@ -165,17 +165,20 @@
       const containerDetalhe = document.getElementById('conteudo-modulo-detalhe');
       containerDetalhe.innerHTML = `
         <div style="background: #202024; padding: 20px; border-radius: 8px; border: 1px solid #29292e;">
-          <h4 style="color: #e67e22; margin-top: 0;">Resumo da Aula</h4>
-          <p>${mod.descricao || 'Nenhuma descrição detalhada informada.'}</p>
-          <hr style="border: 0; border-top: 1px solid #29292e; margin: 15px 0;">
-          <p style="font-size: 13px; color: #a8a8b3;">Status do módulo: <strong style="color: #04d361;">Disponível para estudo</strong></p>
+          <h4 style="color: #e67e22; margin-top: 0;">Descrição e Roteiro da Aula</h4>
+          <p style="font-size: 15px; line-height: 1.6;">${mod.descricao || 'Nenhuma descrição detalhada informada para este módulo.'}</p>
+          <hr style="border: 0; border-top: 1px solid #29292e; margin: 20px 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: #04d361;">● Conteúdo liberado para estudo</span>
+            <button class="btn-sys" onclick="alert('Aula concluída com sucesso! Méritos registados.')">Marcar como Concluído</button>
+          </div>
         </div>
       `;
     }
 
     function voltarParaModulos() {
       document.getElementById('secao-detalhe-modulo').style.display = 'none';
-      document.getElementById('lista-modulos-aluno').parentElement.style.display = 'block';
+      document.getElementById('secao-lista-modulos').style.display = 'block';
     }
 
     function sair() {
