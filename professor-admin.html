@@ -18,15 +18,15 @@
 <body>
 
   <!-- TELA DE PROTEÇÃO / LOGIN DO PROFESSOR -->
-  <div id="login-secr-box" style="max-width: 400px; margin-top: 60px; text-align: center;" class="admin-card">
+  <div id="login-secr-box" style="max-width: 400px; margin-top: 60px; text-align: center; display: none;" class="admin-card">
     <h2 style="color: #e67e22;">Área Restrita</h2>
     <p style="font-size:13px; color:#a8a8b3;">Autenticação exigida para gerenciar alunos.</p>
-    <input type="email" id="adm-email" class="auth-input" placeholder="E-mail do Professor">
-    <input type="password" id="adm-senha" class="auth-input" placeholder="Senha">
-    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="autenticarProfessor()">Acessar Painel</button>
+    <input type="email" id="adm-email" class="auth-input" value="thiagomgp@gmail.com" placeholder="E-mail do Professor">
+    <input type="password" id="adm-senha" class="auth-input" placeholder="Senha do Supabase">
+    <button class="btn-sys" style="background:#e67e22; color:#121214; width:100%; padding:10px;" onclick="autenticarProfessorManual()">Acessar Painel</button>
   </div>
 
-  <!-- PAINEL ADMINISTRATIVO (OCULTO ATÉ LOGIN) -->
+  <!-- PAINEL ADMINISTRATIVO -->
   <div id="painel-admin-box" class="admin-card" style="display: none;">
     <h2 style="color: #e67e22; margin-top:0;">👑 Gestão de Alunos & Acessos</h2>
     <p style="color: #a8a8b3; font-size: 13px;">Autorize cadastros, altere senhas e controle turmas.</p>
@@ -45,7 +45,7 @@
         <!-- Preenchido via script -->
       </tbody>
     </table>
-    <button class="btn-sys" style="margin-top: 20px;" onclick="_supabase.auth.signOut().then(()=>location.reload())">Sair do Painel</button>
+    <button class="btn-sys" style="margin-top: 20px;" onclick="fazerLogoutAdmin()">Sair do Painel</button>
   </div>
 
   <script>
@@ -55,27 +55,35 @@
 
     const EMAIL_PROFESSOR = 'thiagomgp@gmail.com';
 
-    async function autenticarProfessor() {
+    async function verificarSessaoAutomatica() {
+      const { data: { session } } = await _supabase.auth.getSession();
+      
+      if (session && session.user.email.toLowerCase() === EMAIL_PROFESSOR.toLowerCase()) {
+        exibirPainelAdmin();
+      } else {
+        // Se não estiver logado, exibe a caixinha para preencher a senha
+        document.getElementById('login-secr-box').style.display = 'block';
+      }
+    }
+
+    async function autenticarProfessorManual() {
       const email = document.getElementById('adm-email').value.trim();
       const senha = document.getElementById('adm-senha').value;
 
       if (email.toLowerCase() !== EMAIL_PROFESSOR.toLowerCase()) {
-        return alert("Acesso negado: Credenciais inválidas para esta área.");
+        return alert("Acesso negado.");
       }
 
       const { error } = await _supabase.auth.signInWithPassword({ email, password: senha });
       if (error) return alert("Erro de login: " + error.message);
 
-      verificarEExibirPainel();
+      exibirPainelAdmin();
     }
 
-    async function verificarEExibirPainel() {
-      const { data: { session } } = await _supabase.auth.getSession();
-      if (session && session.user.email.toLowerCase() === EMAIL_PROFESSOR.toLowerCase()) {
-        document.getElementById('login-secr-box').style.display = 'none';
-        document.getElementById('painel-admin-box').style.display = 'block';
-        carregarAlunos();
-      }
+    function exibirPainelAdmin() {
+      document.getElementById('login-secr-box').style.display = 'none';
+      document.getElementById('painel-admin-box').style.display = 'block';
+      carregarAlunos();
     }
 
     async function carregarAlunos() {
@@ -112,7 +120,12 @@
       carregarAlunos();
     }
 
-    window.onload = verificarEExibirPainel;
+    async function fazerLogoutAdmin() {
+      await _supabase.auth.signOut();
+      location.reload();
+    }
+
+    window.onload = verificarSessaoAutomatica;
   </script>
 </body>
 </html>
