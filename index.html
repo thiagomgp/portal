@@ -2,17 +2,17 @@
 <html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
-  <title>Portal Acadêmico — Cultura Digital & Arena</title>
+  <title>Portal Acadêmico — Cultura Digital</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121214; color: #e1e1e6; margin: 0; padding: 0; }
-    header { background: #1a1a1e; border-bottom: 2px solid #29292e; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    header { background: #1a1a1e; border-bottom: 2px solid #e67e22; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
     h2, h3 { color: #e67e22; }
     .nav-tabs { display: flex; gap: 10px; background: #161619; padding: 10px 30px; border-bottom: 1px solid #29292e; flex-wrap: wrap; }
     .tab-btn { background: #202024; border: 1px solid #29292e; color: #a8a8b3; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-    .tab-btn.active, .tab-btn:hover { background: #00b4d8; color: #121214; border-color: #00b4d8; }
+    .tab-btn.active, .tab-btn:hover { background: #e67e22; color: #121214; border-color: #e67e22; }
     .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
-    .card { background: #1a1a1e; border: 1px solid #29292e; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .card { background: #1a1a1e; border: 1px solid #e67e22; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 15px; }
     .module-card { background: #202024; border: 1px solid #29292e; border-radius: 8px; padding: 20px; cursor: pointer; transition: border-color 0.2s; }
     .module-card:hover { border-color: #e67e22; }
@@ -20,15 +20,14 @@
     .btn-sys:hover { opacity: 0.85; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    .material-item { background: #202024; border: 1px solid #29292e; padding: 12px 15px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
 
   <header>
-    <h2>Portal de Cultura Digital & Arena</h2>
+    <h2>Portal Acadêmico — Cultura Digital</h2>
     <div style="display: flex; align-items: center; gap: 15px;">
-      <span id="nome-aluno-logado" style="font-weight: bold; color: #00b4d8;">Estudante</span>
+      <span id="nome-aluno-logado" style="font-weight: bold; color: #e67e22;">Estudante</span>
       <span style="background: #202024; padding: 6px 12px; border-radius: 20px; border: 1px solid #29292e; font-size: 13px;">🧠 <span id="moedas-aluno">40</span> Méritos</span>
       <button class="btn-sys" onclick="sair()" style="background: #f75a68; color: #fff; padding: 6px 12px; font-size: 12px;">Sair</button>
     </div>
@@ -55,24 +54,24 @@
       </div>
     </div>
 
-    <!-- ABA 2: AULAS & MATERIAIS (CLICÁVEIS) -->
+    <!-- ABA 2: AULAS & MATERIAIS -->
     <div id="disciplinas" class="tab-content">
       <div class="card">
         <h3>📚 Materiais Didáticos & Guias da BNCC</h3>
-        <p style="color: #a8a8b3;">Selecione um módulo abaixo para abrir as aulas e materiais práticos:</p>
+        <p style="color: #a8a8b3;">Selecione um módulo abaixo para abrir o conteúdo da aula:</p>
         <div class="module-grid" id="lista-modulos-aluno">
           <p>A carregar módulos do Supabase...</p>
         </div>
       </div>
 
-      <!-- VISUALIZAÇÃO DOS MATERIAIS DE UM MÓDULO ESPECÍFICO -->
-      <div id="secao-detalhe-modulo" class="card" style="display: none; margin-top: 20px; border-color: #00b4d8;">
+      <!-- DETALHE DO MÓDULO SELECIONADO -->
+      <div id="secao-detalhe-modulo" class="card" style="display: none; margin-top: 20px; border-color: #e67e22;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 id="titulo-modulo-selecionado" style="color: #00b4d8; margin: 0;"></h3>
+          <h3 id="titulo-modulo-selecionado" style="color: #e67e22; margin: 0;"></h3>
           <button class="btn-sys" onclick="voltarParaModulos()" style="background: #29292e; color: #fff; font-size: 12px;">← Voltar aos Módulos</button>
         </div>
-        <div id="lista-materiais-modulo" style="margin-top: 15px;">
-          <!-- Materiais inseridos via script -->
+        <div id="conteudo-modulo-detalhe" style="margin-top: 15px; color: #e1e1e6; line-height: 1.6;">
+          <!-- Conteúdo exibido diretamente da tabela se_modulos -->
         </div>
       </div>
     </div>
@@ -107,6 +106,11 @@
     const SUPABASE_KEY = 'sb_publishable_2pzNR2UAF2-jfiXQDqrA3w_lwFryik0';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Verifica autenticação
+    if (!localStorage.getItem('aluno_logado_id')) {
+      window.location.href = 'login.html';
+    }
+
     function mudarAba(idAba, evento) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -115,21 +119,19 @@
     }
 
     async function carregarPortalAluno() {
-      // Carrega informações do aluno logado
       const nomeSalvo = localStorage.getItem('aluno_logado_nome');
       if (nomeSalvo) {
         document.getElementById('nome-aluno-logado').innerText = nomeSalvo;
       }
 
-      // Carregar aviso do mural publicado no painel do professor
       const avisoSalvo = localStorage.getItem('aviso_mural_professor');
       if(avisoSalvo) {
         document.getElementById('texto-aviso-aluno').innerText = avisoSalvo;
       } else {
-        document.getElementById('texto-aviso-aluno').innerText = "Conclua a leitura dos módulos na aba Aulas & Materiais para garantir bônus de Méritos Acadêmicos (🧠) no seu perfil!";
+        document.getElementById('texto-aviso-aluno').innerText = "Conclua a leitura dos módulos na aba Aulas & Materiais para garantir bônus de Méritos Acadêmicos!";
       }
 
-      // Carregar módulos do Supabase (tabela se_modulos)
+      // Carrega os módulos da tabela se_modulos ordenados
       const { data: modulos, error } = await _supabase.from('se_modulos').select('*').order('ordem', { ascending: true });
       const containerModulos = document.getElementById('lista-modulos-aluno');
       
@@ -145,52 +147,30 @@
         div.innerHTML = `
           <h4 style="color: #e67e22; margin-top:0;">Módulo ${mod.ordem || ''} — ${mod.titulo}</h4>
           <p style="color: #a8a8b3; font-size: 13px;">${mod.descricao || 'Conteúdo curricular interativo.'}</p>
-          <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aulas & Materiais</button>
+          <button class="btn-sys" style="font-size: 11px; padding: 6px 12px; margin-top: 10px;">Abrir Aula</button>
         `;
-        div.onclick = () => carregarMateriaisDoModulo(mod.id, mod.titulo);
+        // Ao clicar, exibe os detalhes do módulo armazenados na própria tabela se_modulos
+        div.onclick = () => abrirDetalheModulo(mod);
         containerModulos.appendChild(div);
       });
     }
 
-    function sair() {
-      localStorage.removeItem('aluno_logado_id');
-      localStorage.removeItem('aluno_logado_nome');
-      window.location.href = 'login.html';
-    }
-
-    async function carregarMateriaisDoModulo(idModulo, tituloModulo) {
+    function abrirDetalheModulo(mod) {
       document.getElementById('lista-modulos-aluno').parentElement.style.display = 'none';
       const secaoDetalhe = document.getElementById('secao-detalhe-modulo');
       secaoDetalhe.style.display = 'block';
-      document.getElementById('titulo-modulo-selecionado').innerText = tituloModulo;
       
-      const containerMateriais = document.getElementById('lista-materiais-modulo');
-      containerMateriais.innerHTML = '<p>A carregar materiais e aulas...</p>';
-
-      // Consulta os materiais vinculados ao módulo na tabela se_materiais
-      const { data: materiais, error } = await _supabase
-        .from('se_materiais')
-        .select('*')
-        .eq('modulo_id', idModulo);
-
-      if (error || !materiais || materiais.length === 0) {
-        containerMateriais.innerHTML = '<p style="color: #f39c12;">Nenhum material cadastrado para este módulo ainda.</p>';
-        return;
-      }
-
-      containerMateriais.innerHTML = '';
-      materiais.forEach(mat => {
-        const item = document.createElement('div');
-        item.className = 'material-item';
-        item.innerHTML = `
-          <div>
-            <strong>📄 ${mat.titulo}</strong>
-            <p style="margin: 3px 0 0 0; font-size: 12px; color: #a8a8b3;">${mat.descricao || 'Atividade prática recomendada.'}</p>
-          </div>
-          <a href="${mat.url || '#'}" target="_blank" class="btn-sys" style="font-size: 11px; text-decoration: none;">Aceder Conteúdo</a>
-        `;
-        containerMateriais.appendChild(item);
-      });
+      document.getElementById('titulo-modulo-selecionado').innerText = `Módulo ${mod.ordem || ''} — ${mod.titulo}`;
+      
+      const containerDetalhe = document.getElementById('conteudo-modulo-detalhe');
+      containerDetalhe.innerHTML = `
+        <div style="background: #202024; padding: 20px; border-radius: 8px; border: 1px solid #29292e;">
+          <h4 style="color: #e67e22; margin-top: 0;">Resumo da Aula</h4>
+          <p>${mod.descricao || 'Nenhuma descrição detalhada informada.'}</p>
+          <hr style="border: 0; border-top: 1px solid #29292e; margin: 15px 0;">
+          <p style="font-size: 13px; color: #a8a8b3;">Status do módulo: <strong style="color: #04d361;">Disponível para estudo</strong></p>
+        </div>
+      `;
     }
 
     function voltarParaModulos() {
@@ -200,6 +180,7 @@
 
     function sair() {
       localStorage.removeItem('aluno_logado_id');
+      localStorage.removeItem('aluno_logado_nome');
       window.location.href = 'login.html';
     }
 
